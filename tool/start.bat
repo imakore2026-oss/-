@@ -26,7 +26,7 @@ if not defined PY_CMD (
 if not defined PY_CMD (
     echo Python not found. Installing it now, please wait...
     set "PY_INSTALLER=%TEMP%\python-installer.exe"
-    powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe' -OutFile '%PY_INSTALLER%'"
+    powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -Uri 'https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe' -OutFile '%PY_INSTALLER%'"
     if not exist "%PY_INSTALLER%" (
         echo Failed to download Python. Please check your internet connection.
         pause
