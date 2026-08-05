@@ -1,9 +1,9 @@
 @echo off
 setlocal
 
-rem Windows標準の「python.exe」はPython未インストールでもMicrosoft Storeへの
-rem 案内用ダミーとして存在することがあり、where だけでは誤判定するため、
-rem 実際にコードを実行できるかどうかで確認する。
+rem The stock "python.exe" that Windows ships even without Python installed
+rem (it just opens the Microsoft Store) makes a plain "where" check unreliable,
+rem so we confirm by actually running code instead.
 set "PY_CMD="
 set "PY_PROBE=%TEMP%\py_probe_%RANDOM%.txt"
 
@@ -24,29 +24,29 @@ if not defined PY_CMD (
 )
 
 if not defined PY_CMD (
-    echo Pythonが見つかりません。自動でインストールします。しばらくお待ちください...
+    echo Python not found. Installing it now, please wait...
     set "PY_INSTALLER=%TEMP%\python-installer.exe"
     powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe' -OutFile '%PY_INSTALLER%'"
     if not exist "%PY_INSTALLER%" (
-        echo Pythonのダウンロードに失敗しました。インターネット接続を確認してください。
+        echo Failed to download Python. Please check your internet connection.
         pause
         exit /b 1
     )
-    echo Pythonをインストール中です...
+    echo Installing Python...
     "%PY_INSTALLER%" /quiet InstallAllUsers=0 PrependPath=1 Include_launcher=1
     del "%PY_INSTALLER%"
     echo.
-    echo インストールが完了しました。
-    echo 一度このウィンドウを閉じて、もう一度「start.bat」をダブルクリックしてください。
+    echo Install complete.
+    echo Please close this window and double-click start.bat again.
     pause
     exit /b 0
 )
 
-echo 必要な部品を確認しています（初回のみ少し時間がかかります）...
+echo Checking required components (first run only, may take a moment)...
 %PY_CMD% -m pip install --quiet --disable-pip-version-check --upgrade pip >nul 2>nul
 %PY_CMD% -m pip install --quiet --disable-pip-version-check pypdf openpyxl
 if errorlevel 1 (
-    echo 部品のインストールに失敗しました。インターネット接続を確認してください。
+    echo Failed to install required components. Please check your internet connection.
     pause
     exit /b 1
 )
@@ -54,5 +54,5 @@ if errorlevel 1 (
 %PY_CMD% "%~dp0watch_folder.py"
 
 echo.
-echo ツールが終了しました。
+echo Tool stopped.
 pause
