@@ -3,21 +3,32 @@ chcp 65001 >nul
 setlocal
 set PYTHONUTF8=1
 
-set PY_CMD=
-where py >nul 2>nul
-if %errorlevel%==0 (
-    set PY_CMD=py
-) else (
-    where python >nul 2>nul
-    if %errorlevel%==0 (
-        set PY_CMD=python
+rem Windows標準の「python.exe」はPython未インストールでもMicrosoft Storeへの
+rem 案内用ダミーとして存在することがあり、where だけでは誤判定するため、
+rem 実際にコードを実行できるかどうかで確認する。
+set "PY_CMD="
+set "PY_PROBE=%TEMP%\py_probe_%RANDOM%.txt"
+
+py -3 -c "print(1)" 1>"%PY_PROBE%" 2>nul
+if exist "%PY_PROBE%" (
+    findstr /x "1" "%PY_PROBE%" >nul 2>nul
+    if not errorlevel 1 set "PY_CMD=py -3"
+    del "%PY_PROBE%" >nul 2>nul
+)
+
+if not defined PY_CMD (
+    python -c "print(1)" 1>"%PY_PROBE%" 2>nul
+    if exist "%PY_PROBE%" (
+        findstr /x "1" "%PY_PROBE%" >nul 2>nul
+        if not errorlevel 1 set "PY_CMD=python"
+        del "%PY_PROBE%" >nul 2>nul
     )
 )
 
-if "%PY_CMD%"=="" (
+if not defined PY_CMD (
     echo Pythonが見つかりません。自動でインストールします。しばらくお待ちください...
     set "PY_INSTALLER=%TEMP%\python-installer.exe"
-    powershell -NoProfile -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe' -OutFile '%PY_INSTALLER%'"
+    powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe' -OutFile '%PY_INSTALLER%'"
     if not exist "%PY_INSTALLER%" (
         echo Pythonのダウンロードに失敗しました。インターネット接続を確認してください。
         pause
