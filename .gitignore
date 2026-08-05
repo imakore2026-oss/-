@@ -1,0 +1,6 @@
+記入済みPDF/
+受注・作業リスト.xlsx
+tool/.state.json
+__pycache__/
+*.pyc
+.claude/
