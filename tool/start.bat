@@ -1,11 +1,9 @@
 @echo off
-chcp 65001 >nul
 setlocal
-set PYTHONUTF8=1
 
-rem Windowsæ¨™æº–ã®ã€Œpython.exeã€ã¯Pythonæœªã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã§ã‚‚Microsoft Storeã¸ã®
-rem æ¡ˆå†…ç”¨ãƒ€ãƒŸãƒ¼ã¨ã—ã¦å­˜åœ¨ã™ã‚‹ã“ã¨ãŒã‚ã‚Šã€where ã ã‘ã§ã¯èª¤åˆ¤å®šã™ã‚‹ãŸã‚ã€
-rem å®Ÿéš›ã«ã‚³ãƒ¼ãƒ‰ã‚’å®Ÿè¡Œã§ãã‚‹ã‹ã©ã†ã‹ã§ç¢ºèªã™ã‚‹ã€‚
+rem Windows•W€‚Ìupython.exev‚ÍPython–¢ƒCƒ“ƒXƒg[ƒ‹‚Å‚àMicrosoft Store‚Ö‚Ì
+rem ˆÄ“à—pƒ_ƒ~[‚Æ‚µ‚Ä‘¶İ‚·‚é‚±‚Æ‚ª‚ ‚èAwhere ‚¾‚¯‚Å‚ÍŒë”»’è‚·‚é‚½‚ßA
+rem ÀÛ‚ÉƒR[ƒh‚ğÀs‚Å‚«‚é‚©‚Ç‚¤‚©‚ÅŠm”F‚·‚éB
 set "PY_CMD="
 set "PY_PROBE=%TEMP%\py_probe_%RANDOM%.txt"
 
@@ -26,29 +24,29 @@ if not defined PY_CMD (
 )
 
 if not defined PY_CMD (
-    echo PythonãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚è‡ªå‹•ã§ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã—ã¾ã™ã€‚ã—ã°ã‚‰ããŠå¾…ã¡ãã ã•ã„...
+    echo Python‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB©“®‚ÅƒCƒ“ƒXƒg[ƒ‹‚µ‚Ü‚·B‚µ‚Î‚ç‚­‚¨‘Ò‚¿‚­‚¾‚³‚¢...
     set "PY_INSTALLER=%TEMP%\python-installer.exe"
     powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe' -OutFile '%PY_INSTALLER%'"
     if not exist "%PY_INSTALLER%" (
-        echo Pythonã®ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰ã«å¤±æ•—ã—ã¾ã—ãŸã€‚ã‚¤ãƒ³ã‚¿ãƒ¼ãƒãƒƒãƒˆæ¥ç¶šã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚
+        echo Python‚Ìƒ_ƒEƒ“ƒ[ƒh‚É¸”s‚µ‚Ü‚µ‚½BƒCƒ“ƒ^[ƒlƒbƒgÚ‘±‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢B
         pause
         exit /b 1
     )
-    echo Pythonã‚’ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ä¸­ã§ã™...
+    echo Python‚ğƒCƒ“ƒXƒg[ƒ‹’†‚Å‚·...
     "%PY_INSTALLER%" /quiet InstallAllUsers=0 PrependPath=1 Include_launcher=1
     del "%PY_INSTALLER%"
     echo.
-    echo ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ãŒå®Œäº†ã—ã¾ã—ãŸã€‚
-    echo ä¸€åº¦ã“ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’é–‰ã˜ã¦ã€ã‚‚ã†ä¸€åº¦ã€Œä½œæ¥­é–‹å§‹.batã€ã‚’ãƒ€ãƒ–ãƒ«ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„ã€‚
+    echo ƒCƒ“ƒXƒg[ƒ‹‚ªŠ®—¹‚µ‚Ü‚µ‚½B
+    echo ˆê“x‚±‚ÌƒEƒBƒ“ƒhƒE‚ğ•Â‚¶‚ÄA‚à‚¤ˆê“xustart.batv‚ğƒ_ƒuƒ‹ƒNƒŠƒbƒN‚µ‚Ä‚­‚¾‚³‚¢B
     pause
     exit /b 0
 )
 
-echo å¿…è¦ãªéƒ¨å“ã‚’ç¢ºèªã—ã¦ã„ã¾ã™ï¼ˆåˆå›ã®ã¿å°‘ã—æ™‚é–“ãŒã‹ã‹ã‚Šã¾ã™ï¼‰...
+echo •K—v‚È•”•i‚ğŠm”F‚µ‚Ä‚¢‚Ü‚·i‰‰ñ‚Ì‚İ­‚µŠÔ‚ª‚©‚©‚è‚Ü‚·j...
 %PY_CMD% -m pip install --quiet --disable-pip-version-check --upgrade pip >nul 2>nul
 %PY_CMD% -m pip install --quiet --disable-pip-version-check pypdf openpyxl
 if errorlevel 1 (
-    echo éƒ¨å“ã®ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã«å¤±æ•—ã—ã¾ã—ãŸã€‚ã‚¤ãƒ³ã‚¿ãƒ¼ãƒãƒƒãƒˆæ¥ç¶šã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚
+    echo •”•i‚ÌƒCƒ“ƒXƒg[ƒ‹‚É¸”s‚µ‚Ü‚µ‚½BƒCƒ“ƒ^[ƒlƒbƒgÚ‘±‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢B
     pause
     exit /b 1
 )
@@ -56,5 +54,5 @@ if errorlevel 1 (
 %PY_CMD% "%~dp0watch_folder.py"
 
 echo.
-echo ãƒ„ãƒ¼ãƒ«ãŒçµ‚äº†ã—ã¾ã—ãŸã€‚
+echo ƒc[ƒ‹‚ªI—¹‚µ‚Ü‚µ‚½B
 pause
