@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
 <style>
-/* Layout: one narrow column — summary board on top, bet rows below, allocation table last */
+/* Layout: one narrow column with two tabs (計算機 / 収支表); each opens with a dark summary board, then inputs, then detail */
 :root {
   --bg: #f3f5f2;
   --surface: #ffffff;
@@ -16,28 +16,32 @@
   --line: #d6ddd7;
   --accent: #1d6a48;
   --accent-soft: #e2efe7;
+  --on-accent: #ffffff;
   --board: #13261d;
   --board-fg: #f2f7f3;
   --board-muted: #9fb8aa;
+  --board-line: #2c4a3b;
   --good: #1d6a48;
   --warn: #a35d00;
   --warn-soft: #fbefdc;
   --bad: #b3261e;
   --bad-soft: #fbe3e1;
+  --board-good: #7fdcae;
+  --board-bad: #ff9c92;
   --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Meiryo", system-ui, sans-serif;
   --font-num: "Barlow Condensed", "Arial Narrow", "Zen Kaku Gothic New", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0f1612; --surface: #17211b; --fg: #e5ece7; --muted: #95a69c; --line: #2a3a31;
-    --accent: #5cc493; --accent-soft: #1d3428; --board: #0a110d; --board-fg: #eef6f0; --board-muted: #86a395;
+    --accent: #5cc493; --accent-soft: #1d3428; --on-accent: #0b1510; --board: #0a110d; --board-fg: #eef6f0; --board-muted: #86a395; --board-line: #22362b;
     --good: #5cc493; --warn: #f0a845; --warn-soft: #33270f; --bad: #ff8a80; --bad-soft: #3a1c1a;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0f1612; --surface: #17211b; --fg: #e5ece7; --muted: #95a69c; --line: #2a3a31;
-  --accent: #5cc493; --accent-soft: #1d3428; --board: #0a110d; --board-fg: #eef6f0; --board-muted: #86a395;
+  --accent: #5cc493; --accent-soft: #1d3428; --on-accent: #0b1510; --board: #0a110d; --board-fg: #eef6f0; --board-muted: #86a395; --board-line: #22362b;
   --good: #5cc493; --warn: #f0a845; --warn-soft: #33270f; --bad: #ff8a80; --bad-soft: #3a1c1a;
   color-scheme: dark;
 }
@@ -46,11 +50,18 @@ body {
   background: var(--bg); color: var(--fg); font-family: var(--font-body);
   font-size: 15px; line-height: 1.6; margin: 0;
 }
-.wrap { max-width: 640px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: grid; gap: 20px; }
+.wrap { max-width: 640px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 64px; display: grid; gap: 20px; }
+.view { display: grid; gap: 20px; }
 h1 { font-size: 1.35rem; margin: 0; text-wrap: balance; letter-spacing: .02em; }
 .lead { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
 h2 { font-size: .8rem; letter-spacing: .12em; color: var(--muted); margin: 0 0 10px; font-weight: 700; }
 .num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+.tab { flex: 1; border: 0; background: transparent; color: var(--muted); font-weight: 700; padding: 8px 10px; border-radius: 7px; }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+.tab .badge { font-family: var(--font-num); font-size: .85rem; margin-left: 6px; padding: 0 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
 
 /* Summary board */
 .board { background: var(--board); color: var(--board-fg); border-radius: 14px; padding: 18px 20px; display: grid; gap: 14px; }
@@ -58,50 +69,56 @@ h2 { font-size: .8rem; letter-spacing: .12em; color: var(--muted); margin: 0 0 1
 .board-label { font-size: .8rem; letter-spacing: .14em; color: var(--board-muted); }
 .board-value { font-family: var(--font-num); font-weight: 700; font-size: 3.6rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .board-value small { font-size: 1.4rem; font-weight: 500; margin-left: 4px; color: var(--board-muted); }
-.chip { display: inline-block; font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; letter-spacing: .04em; }
+.board-value.plus { color: var(--board-good); }
+.board-value.minus { color: var(--board-bad); }
+.chip { display: inline-block; font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; letter-spacing: .04em; white-space: nowrap; }
 .chip.good { background: var(--accent-soft); color: var(--good); }
 .chip.warn { background: var(--warn-soft); color: var(--warn); }
 .chip.bad { background: var(--bad-soft); color: var(--bad); }
 .chip.none { background: transparent; color: var(--board-muted); border: 1px solid var(--board-muted); }
-.board-sub { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; border-top: 1px solid rgba(255,255,255,.12); padding-top: 12px; }
+.board-sub { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; border-top: 1px solid var(--board-line); padding-top: 12px; margin: 0; }
+.board-sub.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .board-sub div { min-width: 0; }
 .board-sub dt { font-size: .72rem; color: var(--board-muted); letter-spacing: .06em; }
 .board-sub dd { margin: 0; font-family: var(--font-num); font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Input panel */
+/* Panels and fields */
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
 .rows { display: grid; gap: 8px; }
 .row { display: grid; grid-template-columns: 28px minmax(0, 1fr) 110px 36px; gap: 8px; align-items: center; }
 .row .idx { font-family: var(--font-num); color: var(--muted); text-align: right; font-size: 1.05rem; }
 .row-head { font-size: .72rem; color: var(--muted); letter-spacing: .06em; }
-input[type="text"], input[type="number"], textarea {
+input[type="text"], input[type="number"], input[type="date"], select, textarea {
   width: 100%; font: inherit; color: var(--fg); background: var(--bg);
   border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0;
 }
-input.odds { font-family: var(--font-num); font-size: 1.25rem; font-weight: 600; text-align: right; padding-block: 5px; }
+input.odds, input.yen { font-family: var(--font-num); font-size: 1.25rem; font-weight: 600; text-align: right; padding-block: 5px; }
 input.invalid { border-color: var(--bad); background: var(--bad-soft); }
-input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.odds-wrap { position: relative; }
-.odds-wrap::after { content: "倍"; position: absolute; right: -2px; top: 50%; transform: translate(100%, -50%); display: none; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 7px 12px; }
 button:hover { border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: not-allowed; }
 .del { width: 36px; height: 36px; padding: 0; color: var(--muted); font-size: 1.1rem; line-height: 1; }
 .del:hover { color: var(--bad); border-color: var(--bad); }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
 .primary:hover { filter: brightness(1.08); }
 .ghost { background: transparent; color: var(--muted); }
-details { margin-top: 12px; }
-summary { cursor: pointer; color: var(--accent); font-size: .9rem; }
-details textarea { margin-top: 8px; min-height: 72px; font-family: var(--font-num); font-size: 1.05rem; }
+.danger { color: var(--bad); border-color: var(--bad); }
+details.more { margin-top: 12px; }
+details.more > summary { cursor: pointer; color: var(--accent); font-size: .9rem; }
+details.more textarea { margin-top: 8px; min-height: 72px; font-family: var(--font-num); font-size: 1.05rem; }
 .hint { color: var(--muted); font-size: .8rem; margin: 6px 0 0; }
 
 .budget { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .budget label { font-weight: 700; }
 .budget .field { display: flex; align-items: center; gap: 6px; flex: 1 1 180px; min-width: 0; }
-.budget input { font-family: var(--font-num); font-size: 1.25rem; font-weight: 600; text-align: right; padding-block: 5px; }
 .presets { display: flex; gap: 6px; flex-wrap: wrap; }
 .presets button { padding: 4px 10px; font-size: .85rem; }
+
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.form-grid label { display: grid; gap: 4px; font-size: .78rem; color: var(--muted); min-width: 0; }
+.record-box { border-top: 1px dashed var(--line); margin-top: 16px; padding-top: 14px; }
 
 /* Allocation table */
 .table-scroll { overflow-x: auto; }
@@ -110,134 +127,287 @@ th { text-align: right; font-weight: 500; font-size: .72rem; color: var(--muted)
 th:first-child, td:first-child { text-align: left; }
 td { padding: 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
 td.num { font-size: 1.15rem; }
-td.plus { color: var(--good); }
-td.minus { color: var(--bad); }
+.plus { color: var(--good); }
+.minus { color: var(--bad); }
 tfoot td { border-bottom: 0; font-weight: 700; }
 .note { color: var(--muted); font-size: .8rem; margin: 10px 0 0; }
 .formula { font-size: .82rem; color: var(--muted); line-height: 1.8; }
 .formula code { font-family: var(--font-num); font-size: .95rem; color: var(--fg); background: var(--accent-soft); padding: 1px 6px; border-radius: 4px; }
 
+/* Ledger */
+.ledger-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ledger-head select { width: auto; }
+.storage { font-size: .78rem; color: var(--muted); }
+.pending-line { font-size: .82rem; color: var(--board-muted); }
+.records { display: grid; gap: 10px; }
+.rec { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
+.rec.hit { border-left-color: var(--good); }
+.rec.miss { border-left-color: var(--bad); }
+.rec.pending { border-left-color: var(--warn); }
+.rec.flash { box-shadow: 0 0 0 2px var(--accent); }
+.rec-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rec-date { font-family: var(--font-num); color: var(--muted); font-size: 1rem; }
+.rec-race { font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.tag { font-size: .72rem; border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--muted); }
+.rec-top .chip { margin-left: auto; }
+.rec-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.rec-nums div { min-width: 0; }
+.rec-nums span { display: block; font-size: .7rem; color: var(--muted); letter-spacing: .06em; }
+.rec-nums b { font-family: var(--font-num); font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rec-bets { font-size: .82rem; color: var(--muted); overflow-wrap: anywhere; }
+.rec details > summary { cursor: pointer; color: var(--accent); font-size: .85rem; }
+.rec .form-grid { margin-top: 10px; }
+.confirm { display: inline-flex; gap: 6px; align-items: center; font-size: .85rem; color: var(--bad); }
+.empty { color: var(--muted); font-size: .9rem; background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 18px; }
+
+.toast { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--board); color: var(--board-fg); padding: 10px 16px; border-radius: 10px; font-size: .9rem; display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+.toast button { background: transparent; color: var(--board-good); border-color: var(--board-line); padding: 4px 10px; }
+
 @media (max-width: 420px) {
   .board-value { font-size: 3rem; }
   .row { grid-template-columns: 22px minmax(0, 1fr) 92px 36px; gap: 6px; }
   .board-sub dd { font-size: 1.15rem; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .board-value { transition: color .2s; }
+  .board-sub.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 </style>
 
 <main class="wrap">
   <header>
     <h1>合成オッズ計算機</h1>
-    <p class="lead">買い目ごとのオッズを入れるだけで、合成オッズと「どれが当たっても同じ払戻」になる賭け金配分を計算します。</p>
+    <p class="lead">オッズを入れるだけで合成オッズと賭け金配分を計算。買った内容は収支表に記録して、回収率まで管理できます。</p>
   </header>
 
-  <section class="board" aria-live="polite">
-    <div class="board-main">
-      <div>
-        <div class="board-label">合成オッズ</div>
-        <div class="board-value" id="gosei">–<small>倍</small></div>
-      </div>
-      <span class="chip none" id="verdict">オッズを入力</span>
-    </div>
-    <dl class="board-sub">
-      <div><dt>点数</dt><dd class="num" id="count">0点</dd></div>
-      <div><dt>的中確率の目安</dt><dd class="num" id="prob">–</dd></div>
-      <div><dt>最低払戻（配分後）</dt><dd class="num" id="minPay">–</dd></div>
-    </dl>
-  </section>
+  <nav class="tabs" role="tablist" aria-label="表示切り替え">
+    <button type="button" class="tab" role="tab" id="tab-calc" aria-controls="view-calc" aria-selected="true">計算機</button>
+    <button type="button" class="tab" role="tab" id="tab-ledger" aria-controls="view-ledger" aria-selected="false">収支表<span class="badge" id="pendingBadge" hidden></span></button>
+  </nav>
 
-  <section class="panel" aria-labelledby="h-bets">
-    <h2 id="h-bets">買い目とオッズ</h2>
-    <div class="row row-head" aria-hidden="true">
-      <span></span><span>買い目（任意）</span><span style="text-align:right">オッズ（倍）</span><span></span>
-    </div>
-    <div class="rows" id="rows"></div>
-    <div class="actions">
-      <button type="button" class="primary" id="add">＋ 買い目を追加</button>
-      <button type="button" class="ghost" id="clear">すべて消去</button>
-    </div>
-    <p class="hint">オッズ欄で Enter を押すと次の行に進みます（最後の行なら新しい行を追加）。</p>
-    <details>
-      <summary>オッズをまとめて入力する</summary>
-      <textarea id="bulk" placeholder="例: 3.5 5.2 8.0 12.4&#10;スペース・カンマ・改行区切りで貼り付け"></textarea>
+  <!-- ===== 計算機 ===== -->
+  <div class="view" id="view-calc" role="tabpanel" aria-labelledby="tab-calc">
+    <section class="board" aria-live="polite">
+      <div class="board-main">
+        <div>
+          <div class="board-label">合成オッズ</div>
+          <div class="board-value" id="gosei">–<small>倍</small></div>
+        </div>
+        <span class="chip none" id="verdict">オッズを入力</span>
+      </div>
+      <dl class="board-sub">
+        <div><dt>点数</dt><dd class="num" id="count">0点</dd></div>
+        <div><dt>的中確率の目安</dt><dd class="num" id="prob">–</dd></div>
+        <div><dt>最低払戻（配分後）</dt><dd class="num" id="minPay">–</dd></div>
+      </dl>
+    </section>
+
+    <section class="panel" aria-labelledby="h-bets">
+      <h2 id="h-bets">買い目とオッズ</h2>
+      <div class="row row-head" aria-hidden="true">
+        <span></span><span>買い目（任意）</span><span style="text-align:right">オッズ（倍）</span><span></span>
+      </div>
+      <div class="rows" id="rows"></div>
       <div class="actions">
-        <button type="button" id="bulkApply">この内容で置き換える</button>
+        <button type="button" class="primary" id="add">＋ 買い目を追加</button>
+        <button type="button" class="ghost" id="clear">すべて消去</button>
       </div>
-    </details>
-  </section>
+      <p class="hint">オッズ欄で Enter を押すと次の行に進みます（最後の行なら新しい行を追加）。</p>
+      <details class="more">
+        <summary>オッズをまとめて入力する</summary>
+        <textarea id="bulk" placeholder="例: 3.5 5.2 8.0 12.4&#10;スペース・カンマ・改行区切りで貼り付け"></textarea>
+        <div class="actions">
+          <button type="button" id="bulkApply">この内容で置き換える</button>
+        </div>
+      </details>
+    </section>
 
-  <section class="panel" aria-labelledby="h-alloc">
-    <h2 id="h-alloc">賭け金の配分</h2>
-    <div class="budget">
-      <label for="budget">総投資額</label>
-      <div class="field"><input type="number" id="budget" min="100" step="100" inputmode="numeric" value="10000"><span>円</span></div>
-      <div class="presets">
-        <button type="button" data-b="1000">1,000</button>
-        <button type="button" data-b="3000">3,000</button>
-        <button type="button" data-b="5000">5,000</button>
-        <button type="button" data-b="10000">10,000</button>
+    <section class="panel" aria-labelledby="h-alloc">
+      <h2 id="h-alloc">賭け金の配分</h2>
+      <div class="budget">
+        <label for="budget">総投資額</label>
+        <div class="field"><input type="number" id="budget" class="yen" min="100" step="100" inputmode="numeric" value="10000"><span>円</span></div>
+        <div class="presets">
+          <button type="button" data-b="1000">1,000</button>
+          <button type="button" data-b="3000">3,000</button>
+          <button type="button" data-b="5000">5,000</button>
+          <button type="button" data-b="10000">10,000</button>
+        </div>
       </div>
-    </div>
-    <div class="table-scroll" style="margin-top:14px">
-      <table>
-        <thead><tr><th>買い目</th><th>オッズ</th><th>賭け金</th><th>的中時払戻</th><th>収支</th></tr></thead>
-        <tbody id="alloc"></tbody>
-        <tfoot id="allocFoot"></tfoot>
-      </table>
-    </div>
-    <p class="note">賭け金は100円単位に丸めています。そのため、払戻は買い目ごとに少しずつ差が出ます。</p>
-  </section>
+      <div class="table-scroll" style="margin-top:14px">
+        <table>
+          <thead><tr><th>買い目</th><th>オッズ</th><th>賭け金</th><th>的中時払戻</th><th>収支</th></tr></thead>
+          <tbody id="alloc"></tbody>
+          <tfoot id="allocFoot"></tfoot>
+        </table>
+      </div>
+      <p class="note">賭け金は100円単位に丸めています。そのため、払戻は買い目ごとに少しずつ差が出ます。</p>
 
-  <section class="formula">
-    <h2>計算式</h2>
-    合成オッズ <code>= 1 ÷ (1/オッズ₁ + 1/オッズ₂ + …)</code><br>
-    各買い目の賭け金 <code>= 総投資額 × (1/オッズ) ÷ Σ(1/オッズ)</code><br>
-    合成オッズが 1.0 倍を下回ると、どれが当たっても損（トリガミ）になります。
-  </section>
+      <div class="record-box">
+        <h2>この買い目を収支表に記録</h2>
+        <div class="form-grid">
+          <label>日付<input type="date" id="recDate"></label>
+          <label>レース<input type="text" id="recRace" placeholder="例: 東京11R"></label>
+          <label>券種<select id="recType"></select></label>
+        </div>
+        <div class="actions">
+          <button type="button" class="primary" id="recordBtn">収支表に記録</button>
+          <span class="hint" id="recordHint" style="margin:0"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="formula">
+      <h2>計算式</h2>
+      合成オッズ <code>= 1 ÷ (1/オッズ₁ + 1/オッズ₂ + …)</code><br>
+      各買い目の賭け金 <code>= 総投資額 × (1/オッズ) ÷ Σ(1/オッズ)</code><br>
+      合成オッズが 1.0 倍を下回ると、どれが当たっても損（トリガミ）になります。
+    </section>
+  </div>
+
+  <!-- ===== 収支表 ===== -->
+  <div class="view" id="view-ledger" role="tabpanel" aria-labelledby="tab-ledger" hidden>
+    <section class="board" aria-live="polite">
+      <div class="board-main">
+        <div>
+          <div class="board-label" id="lgPeriod">収支（全期間）</div>
+          <div class="board-value" id="lgProfit">±0<small>円</small></div>
+        </div>
+        <span class="chip none" id="lgRate">回収率 –</span>
+      </div>
+      <dl class="board-sub four">
+        <div><dt>投資</dt><dd class="num" id="lgStake">0円</dd></div>
+        <div><dt>払戻</dt><dd class="num" id="lgPayout">0円</dd></div>
+        <div><dt>的中率</dt><dd class="num" id="lgHit">–</dd></div>
+        <div><dt>精算済み</dt><dd class="num" id="lgCount">0件</dd></div>
+      </dl>
+      <div class="pending-line" id="lgPending" hidden></div>
+    </section>
+
+    <div class="ledger-head">
+      <select id="monthFilter" aria-label="期間"></select>
+      <span class="storage" id="storageLabel">保存先を確認しています…</span>
+    </div>
+
+    <section class="panel" id="monthlyPanel" aria-labelledby="h-monthly" hidden>
+      <h2 id="h-monthly">月別の収支</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>月</th><th>件数</th><th>投資</th><th>払戻</th><th>収支</th><th>回収率</th></tr></thead>
+          <tbody id="monthly"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-records">
+      <h2 id="h-records">記録一覧</h2>
+      <div class="records" id="records"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-manual">
+      <h2 id="h-manual">手動で記録を追加</h2>
+      <div class="form-grid">
+        <label>日付<input type="date" id="mDate"></label>
+        <label>レース<input type="text" id="mRace" placeholder="例: 阪神9R"></label>
+        <label>券種<select id="mType"></select></label>
+        <label>投資額（円）<input type="number" id="mStake" class="yen" min="0" step="100" inputmode="numeric"></label>
+        <label>払戻額（円）<input type="number" id="mPayout" class="yen" min="0" step="10" inputmode="numeric" placeholder="未確定なら空欄"></label>
+      </div>
+      <div class="actions"><button type="button" class="primary" id="mAdd">記録を追加</button></div>
+      <p class="hint">払戻額を空欄にすると「結果待ち」、0 にすると「不的中」として記録します。</p>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastMsg"></span><button type="button" id="toastBtn" hidden></button></div>
 </main>
 
 <script>
 (function () {
-  var KEY = 'gosei-odds-v1';
-  var rowsEl = document.getElementById('rows');
-  var budgetEl = document.getElementById('budget');
-  var uid = 0;
+  var $ = function (id) { return document.getElementById(id); };
+  var CALC_KEY = 'gosei-odds-v1';
+  var LEDGER_KEY = 'gosei-ledger-v1';
+  var TAB_KEY = 'gosei-tab';
+  var TYPES = ['単勝', '複勝', '枠連', '馬連', 'ワイド', '馬単', '3連複', '3連単', 'その他'];
+  var WEEK = ['日', '月', '火', '水', '木', '金', '土'];
 
-  // 初回は例の値（ユーザーのデータではない）
-  var state = { budget: 10000, bets: [
-    { name: '例）1着 ③', odds: '3.5' },
-    { name: '例）1着 ⑦', odds: '5.2' },
-    { name: '例）1着 ⑪', odds: '12.4' }
-  ] };
-  try {
-    var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (saved && Array.isArray(saved.bets)) state = saved;
-  } catch (e) {}
-
-  function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
-  }
   function yen(n) { return Math.round(n).toLocaleString('ja-JP') + '円'; }
+  function signedYen(n) { return (n > 0 ? '+' : n < 0 ? '−' : '±') + yen(Math.abs(n)); }
   function fmtOdds(n) { return n >= 100 ? n.toFixed(1) : n.toFixed(2); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function toHalf(s) {
+    return String(s).replace(/[０-９．]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); });
+  }
   function parseOdds(v) {
-    var s = String(v).trim().replace(/[０-９．]/g, function (c) {
-      return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
-    }).replace(/倍$/, '');
+    var s = toHalf(v).trim().replace(/倍$/, '');
     if (s === '') return null;
     var n = Number(s);
     return isFinite(n) && n >= 1 ? n : NaN;
   }
-  function esc(s) {
-    return String(s).replace(/[&<>"]/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
-    });
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function fmtDate(s) {
+    var p = String(s || '').split('-');
+    if (p.length !== 3) return s || '';
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    return p[0] + '/' + (+p[1]) + '/' + (+p[2]) + '(' + WEEK[d.getDay()] + ')';
+  }
+  function newId() { return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+  var toastTimer;
+  function toast(msg, btnLabel, onBtn) {
+    $('toastMsg').textContent = msg;
+    var b = $('toastBtn');
+    b.hidden = !btnLabel;
+    b.textContent = btnLabel || '';
+    b.onclick = function () { $('toast').hidden = true; if (onBtn) onBtn(); };
+    $('toast').hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { $('toast').hidden = true; }, 4000);
+  }
+
+  function fillTypes(sel) {
+    sel.innerHTML = TYPES.map(function (t) { return '<option>' + t + '</option>'; }).join('');
+  }
+  fillTypes($('recType')); fillTypes($('mType'));
+  $('recDate').value = today(); $('mDate').value = today();
+
+  /* ---------- タブ ---------- */
+  function showTab(name) {
+    var calc = name !== 'ledger';
+    $('view-calc').hidden = !calc;
+    $('view-ledger').hidden = calc;
+    $('tab-calc').setAttribute('aria-selected', String(calc));
+    $('tab-ledger').setAttribute('aria-selected', String(!calc));
+    lsSet(TAB_KEY, calc ? 'calc' : 'ledger');
+  }
+  $('tab-calc').addEventListener('click', function () { showTab('calc'); });
+  $('tab-ledger').addEventListener('click', function () { showTab('ledger'); });
+  showTab(location.hash === '#ledger' ? 'ledger' : (lsGet(TAB_KEY) || 'calc'));
+
+  /* ---------- 計算機 ---------- */
+  var rowsEl = $('rows');
+  var budgetEl = $('budget');
+  var uid = 0;
+  var lastAlloc = null; // 収支表へ記録する直近の配分
+
+  // 初回は例の値（ユーザーのデータではない）
+  var calc = lsGet(CALC_KEY);
+  if (!calc || !Array.isArray(calc.bets)) {
+    calc = { budget: 10000, bets: [
+      { name: '例）③', odds: '3.5' },
+      { name: '例）⑦', odds: '5.2' },
+      { name: '例）⑪', odds: '12.4' }
+    ] };
   }
 
   function renderRows(focusIndex) {
     rowsEl.innerHTML = '';
-    state.bets.forEach(function (b, i) {
+    calc.bets.forEach(function (b, i) {
       var id = 'b' + (++uid);
       var row = document.createElement('div');
       row.className = 'row';
@@ -252,12 +422,12 @@ tfoot td { border-bottom: 0; font-weight: 700; }
       oddsIn.addEventListener('keydown', function (e) {
         if (e.key !== 'Enter' || e.isComposing) return;
         e.preventDefault();
-        if (i === state.bets.length - 1) { addRow(); }
-        else { rowsEl.children[i + 1].children[2].focus(); }
+        if (i === calc.bets.length - 1) addRow();
+        else rowsEl.children[i + 1].children[2].focus();
       });
       del.addEventListener('click', function () {
-        state.bets.splice(i, 1);
-        if (!state.bets.length) state.bets.push({ name: '', odds: '' });
+        calc.bets.splice(i, 1);
+        if (!calc.bets.length) calc.bets.push({ name: '', odds: '' });
         renderRows(); update();
       });
       rowsEl.appendChild(row);
@@ -266,45 +436,44 @@ tfoot td { border-bottom: 0; font-weight: 700; }
   }
 
   function addRow() {
-    state.bets.push({ name: '', odds: '' });
-    renderRows(state.bets.length - 1);
+    calc.bets.push({ name: '', odds: '' });
+    renderRows(calc.bets.length - 1);
     update();
   }
 
   function update() {
     var valid = [];
-    state.bets.forEach(function (b, i) {
+    calc.bets.forEach(function (b, i) {
       var o = parseOdds(b.odds);
       var input = rowsEl.children[i] && rowsEl.children[i].children[2];
       if (input) input.classList.toggle('invalid', Number.isNaN(o));
-      if (o) valid.push({ name: b.name.trim() || ('買い目 ' + (i + 1)), odds: o });
+      if (o) valid.push({ name: String(b.name).trim() || ('買い目 ' + (i + 1)), odds: o });
     });
 
     var budget = Math.max(0, Math.floor(Number(budgetEl.value) || 0));
-    state.budget = budget;
+    calc.budget = budget;
+    lsSet(CALC_KEY, calc);
 
-    var goseiEl = document.getElementById('gosei');
-    var verdict = document.getElementById('verdict');
-    document.getElementById('count').textContent = valid.length + '点';
-
-    var tbody = document.getElementById('alloc');
-    var tfoot = document.getElementById('allocFoot');
+    var goseiEl = $('gosei'), verdict = $('verdict');
+    $('count').textContent = valid.length + '点';
+    var tbody = $('alloc'), tfoot = $('allocFoot');
 
     if (!valid.length) {
+      lastAlloc = null;
       goseiEl.innerHTML = '–<small>倍</small>';
       verdict.className = 'chip none'; verdict.textContent = 'オッズを入力';
-      document.getElementById('prob').textContent = '–';
-      document.getElementById('minPay').textContent = '–';
+      $('prob').textContent = '–';
+      $('minPay').textContent = '–';
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:left;color:var(--muted)">オッズを1つ以上入力すると配分が表示されます。</td></tr>';
       tfoot.innerHTML = '';
-      save();
+      refreshRecordButton();
       return;
     }
 
     var inv = valid.reduce(function (s, v) { return s + 1 / v.odds; }, 0);
     var gosei = 1 / inv;
     goseiEl.innerHTML = fmtOdds(gosei) + '<small>倍</small>';
-    document.getElementById('prob').textContent = (Math.min(inv, 1) * 100).toFixed(1) + '%';
+    $('prob').textContent = (Math.min(inv, 1) * 100).toFixed(1) + '%';
 
     if (gosei < 1) { verdict.className = 'chip bad'; verdict.textContent = 'トリガミ（必ず損）'; }
     else if (gosei < 2) { verdict.className = 'chip warn'; verdict.textContent = '低配当'; }
@@ -326,23 +495,24 @@ tfoot td { border-bottom: 0; font-weight: 700; }
         '<td class="num">' + r.odds.toFixed(1) + '</td>' +
         '<td class="num">' + yen(r.amt) + '</td>' +
         '<td class="num">' + yen(pay) + '</td>' +
-        '<td class="num ' + (pl >= 0 ? 'plus' : 'minus') + '">' + (pl >= 0 ? '+' : '−') + yen(Math.abs(pl)) + '</td></tr>';
+        '<td class="num ' + (pl >= 0 ? 'plus' : 'minus') + '">' + signedYen(pl) + '</td></tr>';
     }).join('');
     tfoot.innerHTML = '<tr><td>合計</td><td></td><td class="num">' + yen(total) + '</td>' +
       '<td colspan="2" class="num" style="font-weight:500;color:var(--muted)">実質 ' + fmtOdds(minPay / total) + '倍以上</td></tr>';
-    document.getElementById('minPay').textContent = yen(minPay);
-    save();
+    $('minPay').textContent = yen(minPay);
+    lastAlloc = { bets: rows, total: total, gosei: gosei };
+    refreshRecordButton();
   }
 
-  document.getElementById('add').addEventListener('click', addRow);
-  document.getElementById('clear').addEventListener('click', function () {
-    state.bets = [{ name: '', odds: '' }];
+  $('add').addEventListener('click', addRow);
+  $('clear').addEventListener('click', function () {
+    calc.bets = [{ name: '', odds: '' }];
     renderRows(0); update();
   });
-  document.getElementById('bulkApply').addEventListener('click', function () {
-    var parts = document.getElementById('bulk').value.split(/[\s,、，]+/).filter(Boolean);
+  $('bulkApply').addEventListener('click', function () {
+    var parts = $('bulk').value.split(/[\s,、，]+/).filter(Boolean);
     if (!parts.length) return;
-    state.bets = parts.map(function (p) { return { name: '', odds: p }; });
+    calc.bets = parts.map(function (p) { return { name: '', odds: p }; });
     renderRows(); update();
   });
   budgetEl.addEventListener('input', update);
@@ -350,10 +520,319 @@ tfoot td { border-bottom: 0; font-weight: 700; }
     btn.addEventListener('click', function () { budgetEl.value = btn.dataset.b; update(); });
   });
 
-  budgetEl.value = state.budget || 10000;
-  if (!state.bets.length) state.bets.push({ name: '', odds: '' });
+  /* ---------- 収支表の保存先 ---------- */
+  // claude.ai 上ではアカウントごとの非公開データベース、それ以外（ローカルで開いた場合など）はこのブラウザに保存
+  var store = { mode: 'loading', records: [], col: null };
+
+  function saveLocal() { lsSet(LEDGER_KEY, store.records); }
+  function putRecord(rec) {
+    if (store.mode === 'cloud') {
+      var body = Object.assign({}, rec); delete body.id;
+      return store.col.doc(rec.id).set(body);
+    }
+    var i = store.records.findIndex(function (r) { return r.id === rec.id; });
+    if (i >= 0) store.records[i] = rec; else store.records.push(rec);
+    saveLocal(); renderLedger();
+    return Promise.resolve();
+  }
+  function removeRecord(id) {
+    if (store.mode === 'cloud') return store.col.doc(id).delete();
+    store.records = store.records.filter(function (r) { return r.id !== id; });
+    saveLocal(); renderLedger();
+    return Promise.resolve();
+  }
+  function saveError(e) {
+    var code = e && e.code;
+    if (code === 'quota_exceeded') toast('保存容量の上限です。古い記録を削除してから保存してください。');
+    else if (code === 'invalid_argument') toast('この表示では記録を保存できません（閲覧のみの権限です）。');
+    else toast('保存できませんでした。通信状況を確認して、もう一度お試しください。');
+  }
+
+  function useLocal() {
+    store.mode = 'local';
+    var saved = lsGet(LEDGER_KEY);
+    store.records = Array.isArray(saved) ? saved : [];
+    $('storageLabel').textContent = '保存先: このブラウザ（他の端末とは共有されません）';
+    renderLedger(); refreshRecordButton();
+  }
+
+  function initStore() {
+    var c = window.claude;
+    if (!c || typeof c.use !== 'function') { useLocal(); return; }
+    Promise.all([c.use('db'), c.use('user')]).then(function (res) {
+      var db = res[0], user = res[1];
+      if (!db || !user) { useLocal(); return; }
+      return user.id().then(function (id) {
+        if (!id) { useLocal(); return; }
+        store.mode = 'cloud';
+        store.col = db.doc('data/users/' + id + '/ledger').collection('records');
+        $('storageLabel').textContent = '保存先: あなたのアカウント（本人だけが見られます）';
+        store.col.onSnapshot(function (snap) {
+          store.records = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+          renderLedger(); refreshRecordButton();
+        }, function () {
+          $('storageLabel').textContent = '記録を読み込めませんでした。ページを開き直してください。';
+        });
+        renderLedger(); refreshRecordButton();
+      });
+    }).catch(useLocal);
+  }
+
+  /* ---------- 計算機 → 収支表 ---------- */
+  function refreshRecordButton() {
+    var btn = $('recordBtn'), hint = $('recordHint');
+    if (store.mode === 'loading') { btn.disabled = true; hint.textContent = '準備中…'; return; }
+    btn.disabled = !lastAlloc;
+    hint.textContent = lastAlloc ? (lastAlloc.bets.length + '点・' + yen(lastAlloc.total) + 'を記録します') : 'オッズを入力すると記録できます';
+  }
+
+  $('recordBtn').addEventListener('click', function () {
+    if (!lastAlloc) return;
+    var rec = {
+      id: newId(),
+      date: $('recDate').value || today(),
+      race: $('recRace').value.trim(),
+      type: $('recType').value,
+      bets: lastAlloc.bets.map(function (b) { return { name: b.name, odds: b.odds, amt: b.amt }; }),
+      stake: lastAlloc.total,
+      result: 'pending',
+      hit: -1,
+      payout: 0,
+      createdAt: Date.now()
+    };
+    putRecord(rec).then(function () {
+      flashId = rec.id;
+      toast('収支表に記録しました（結果待ち）', '収支表を見る', function () { showTab('ledger'); renderLedger(); });
+    }, saveError);
+  });
+
+  /* ---------- 収支表 ---------- */
+  var flashId = null;
+  var confirmId = null;
+
+  function monthOf(r) { return String(r.date || '').slice(0, 7); }
+  function sumUp(list) {
+    var s = { stake: 0, payout: 0, settled: 0, hits: 0, pending: 0, pendingStake: 0 };
+    list.forEach(function (r) {
+      if (r.result === 'pending') { s.pending++; s.pendingStake += r.stake || 0; return; }
+      s.settled++; s.stake += r.stake || 0; s.payout += r.payout || 0;
+      if (r.result === 'hit') s.hits++;
+    });
+    return s;
+  }
+
+  function renderLedger() {
+    var all = store.records.slice().sort(function (a, b) {
+      return (b.date || '').localeCompare(a.date || '') || (b.createdAt || 0) - (a.createdAt || 0);
+    });
+
+    var pendingAll = all.filter(function (r) { return r.result === 'pending'; }).length;
+    $('pendingBadge').hidden = !pendingAll;
+    $('pendingBadge').textContent = pendingAll;
+
+    // 期間フィルタ
+    var sel = $('monthFilter');
+    var cur = sel.value || 'all';
+    var months = [];
+    all.forEach(function (r) { var m = monthOf(r); if (m && months.indexOf(m) < 0) months.push(m); });
+    sel.innerHTML = '<option value="all">全期間</option>' + months.map(function (m) {
+      return '<option value="' + m + '">' + m.replace('-', '年') + '月</option>';
+    }).join('');
+    if (cur !== 'all' && months.indexOf(cur) < 0) cur = 'all';
+    sel.value = cur;
+    var list = cur === 'all' ? all : all.filter(function (r) { return monthOf(r) === cur; });
+
+    // サマリー
+    var s = sumUp(list);
+    var profit = s.payout - s.stake;
+    $('lgPeriod').textContent = '収支（' + (cur === 'all' ? '全期間' : cur.replace('-', '年') + '月') + '）';
+    var pv = $('lgProfit');
+    pv.innerHTML = esc(signedYen(profit).replace('円', '')) + '<small>円</small>';
+    pv.className = 'board-value' + (profit > 0 ? ' plus' : profit < 0 ? ' minus' : '');
+    var rate = s.stake ? s.payout / s.stake * 100 : null;
+    var chip = $('lgRate');
+    chip.textContent = '回収率 ' + (rate == null ? '–' : rate.toFixed(1) + '%');
+    chip.className = 'chip ' + (rate == null ? 'none' : rate >= 100 ? 'good' : rate >= 75 ? 'warn' : 'bad');
+    $('lgStake').textContent = yen(s.stake);
+    $('lgPayout').textContent = yen(s.payout);
+    $('lgHit').textContent = s.settled ? (s.hits / s.settled * 100).toFixed(1) + '%' : '–';
+    $('lgCount').textContent = s.settled + '件';
+    $('lgPending').hidden = !s.pending;
+    $('lgPending').textContent = '結果待ち ' + s.pending + '件（投資 ' + yen(s.pendingStake) + '）は集計に含めていません';
+
+    // 月別
+    var showMonthly = cur === 'all' && months.length > 0;
+    $('monthlyPanel').hidden = !showMonthly;
+    if (showMonthly) {
+      $('monthly').innerHTML = months.map(function (m) {
+        var ms = sumUp(all.filter(function (r) { return monthOf(r) === m; }));
+        var p = ms.payout - ms.stake;
+        var rr = ms.stake ? (ms.payout / ms.stake * 100).toFixed(1) + '%' : '–';
+        return '<tr><td>' + m.replace('-', '/') + '</td><td class="num">' + ms.settled + '</td><td class="num">' + yen(ms.stake) +
+          '</td><td class="num">' + yen(ms.payout) + '</td><td class="num ' + (p > 0 ? 'plus' : p < 0 ? 'minus' : '') + '">' + signedYen(p) +
+          '</td><td class="num">' + rr + '</td></tr>';
+      }).join('');
+    }
+
+    // 一覧
+    var box = $('records');
+    if (store.mode === 'loading') { box.innerHTML = '<div class="empty">記録を読み込んでいます…</div>'; return; }
+    if (!list.length) {
+      box.innerHTML = '<div class="empty">まだ記録がありません。計算機で買い目を入力して「収支表に記録」を押すか、下の「手動で記録を追加」から入力してください。</div>';
+      return;
+    }
+    box.innerHTML = list.map(recordHtml).join('');
+    list.forEach(bindRecord);
+    if (flashId) {
+      var el = document.querySelector('[data-id="' + flashId + '"]');
+      if (el && !$('view-ledger').hidden) {
+        el.classList.add('flash');
+        el.scrollIntoView({ block: 'nearest' });
+        setTimeout(function () { el.classList.remove('flash'); }, 1600);
+        flashId = null;
+      }
+    }
+  }
+
+  function statusChip(r) {
+    if (r.result === 'hit') return '<span class="chip good">的中</span>';
+    if (r.result === 'miss') return '<span class="chip bad">不的中</span>';
+    return '<span class="chip warn">結果待ち</span>';
+  }
+
+  function recordHtml(r) {
+    var settled = r.result !== 'pending';
+    var pl = (r.payout || 0) - (r.stake || 0);
+    var bets = Array.isArray(r.bets) ? r.bets : [];
+    var betText = bets.map(function (b, i) {
+      return (r.result === 'hit' && r.hit === i ? '★' : '') + esc(b.name) + ' ' + Number(b.odds).toFixed(1) + '倍×' + yen(b.amt);
+    }).join(' ／ ');
+    var opts = '<option value="pending">結果待ち</option><option value="miss">不的中</option>';
+    if (bets.length) {
+      opts += bets.map(function (b, i) { return '<option value="hit:' + i + '">的中: ' + esc(b.name) + '</option>'; }).join('');
+    } else {
+      opts += '<option value="hit:-1">的中</option>';
+    }
+    var curVal = r.result === 'hit' ? 'hit:' + (bets.length ? r.hit : -1) : r.result;
+    var confirming = confirmId === r.id;
+    return '<article class="rec ' + esc(r.result) + '" data-id="' + esc(r.id) + '">' +
+      '<div class="rec-top"><span class="rec-date">' + esc(fmtDate(r.date)) + '</span>' +
+      '<span class="rec-race">' + (esc(r.race) || '（レース名なし）') + '</span>' +
+      (r.type ? '<span class="tag">' + esc(r.type) + '</span>' : '') + statusChip(r) + '</div>' +
+      '<div class="rec-nums"><div><span>投資</span><b>' + yen(r.stake || 0) + '</b></div>' +
+      '<div><span>払戻</span><b>' + (settled ? yen(r.payout || 0) : '–') + '</b></div>' +
+      '<div><span>収支</span><b class="' + (settled ? (pl > 0 ? 'plus' : pl < 0 ? 'minus' : '') : '') + '">' + (settled ? signedYen(pl) : '–') + '</b></div></div>' +
+      (betText ? '<div class="rec-bets">' + betText + '</div>' : '') +
+      '<details' + (settled ? '' : ' open') + '><summary>' + (settled ? '結果を修正' : '結果を入力') + '</summary>' +
+        '<div class="form-grid">' +
+          '<label>結果<select data-f="result" id="res-' + esc(r.id) + '">' + opts + '</select></label>' +
+          '<label>払戻額（円）<input type="number" class="yen" data-f="payout" id="pay-' + esc(r.id) + '" min="0" step="10" inputmode="numeric" value="' + (r.result === 'hit' ? (r.payout || 0) : '') + '"' + (r.result === 'hit' ? '' : ' disabled') + '></label>' +
+          '<label>投資額（円）<input type="number" class="yen" data-f="stake" id="stk-' + esc(r.id) + '" min="0" step="100" inputmode="numeric" value="' + (r.stake || 0) + '"></label>' +
+        '</div>' +
+        '<p class="hint" data-f="payHint">' + (bets.length ? '的中した買い目を選ぶと、記録時のオッズで払戻額を自動入力します。確定オッズと違うときは書き換えてください。' : '') + '</p>' +
+        '<div class="actions">' +
+          '<button type="button" class="primary" data-f="save">保存</button>' +
+          (bets.length ? '<button type="button" data-f="load">計算機で開く</button>' : '') +
+          (confirming
+            ? '<span class="confirm">削除しますか？<button type="button" class="danger" data-f="delYes">削除する</button><button type="button" data-f="delNo">やめる</button></span>'
+            : '<button type="button" class="ghost" data-f="del">削除</button>') +
+        '</div>' +
+      '</details>' +
+    '</article>';
+  }
+
+  function bindRecord(r) {
+    var el = document.querySelector('[data-id="' + r.id + '"]');
+    if (!el) return;
+    var q = function (f) { return el.querySelector('[data-f="' + f + '"]'); };
+    var resSel = q('result'), payIn = q('payout'), stkIn = q('stake');
+    var bets = Array.isArray(r.bets) ? r.bets : [];
+    resSel.value = r.result === 'hit' ? 'hit:' + (bets.length ? r.hit : -1) : r.result;
+
+    resSel.addEventListener('change', function () {
+      var v = resSel.value;
+      payIn.disabled = v.indexOf('hit') !== 0;
+      if (v.indexOf('hit:') === 0) {
+        var i = +v.slice(4);
+        if (bets[i]) payIn.value = Math.floor(bets[i].amt * bets[i].odds / 10) * 10;
+        payIn.focus();
+      } else {
+        payIn.value = '';
+      }
+    });
+
+    q('save').addEventListener('click', function () {
+      var v = resSel.value;
+      var next = Object.assign({}, r, { bets: bets.slice() });
+      next.stake = Math.max(0, Math.round(Number(stkIn.value) || 0));
+      if (v === 'pending') { next.result = 'pending'; next.hit = -1; next.payout = 0; }
+      else if (v === 'miss') { next.result = 'miss'; next.hit = -1; next.payout = 0; }
+      else {
+        next.result = 'hit'; next.hit = +v.slice(4);
+        next.payout = Math.max(0, Math.round(Number(toHalf(payIn.value)) || 0));
+      }
+      putRecord(next).then(function () { toast('記録を更新しました'); }, saveError);
+    });
+
+    var load = q('load');
+    if (load) load.addEventListener('click', function () {
+      calc.bets = bets.map(function (b) { return { name: b.name, odds: String(b.odds) }; });
+      budgetEl.value = r.stake || 10000;
+      $('recRace').value = r.race || '';
+      if (r.date) $('recDate').value = r.date;
+      if (r.type) $('recType').value = r.type;
+      renderRows(); update();
+      showTab('calc');
+      window.scrollTo(0, 0);
+      toast('買い目を計算機に読み込みました');
+    });
+
+    var del = q('del');
+    if (del) del.addEventListener('click', function () { confirmId = r.id; renderLedger(); });
+    var no = q('delNo');
+    if (no) no.addEventListener('click', function () { confirmId = null; renderLedger(); });
+    var yes = q('delYes');
+    if (yes) yes.addEventListener('click', function () {
+      confirmId = null;
+      removeRecord(r.id).then(function () { toast('記録を削除しました'); }, saveError);
+    });
+  }
+
+  $('monthFilter').addEventListener('change', renderLedger);
+
+  $('mAdd').addEventListener('click', function () {
+    var stake = Math.round(Number(toHalf($('mStake').value)) || 0);
+    if (stake <= 0) { toast('投資額を入力してください'); $('mStake').focus(); return; }
+    if (store.mode === 'loading') { toast('準備中です。少し待ってからもう一度押してください。'); return; }
+    var payRaw = toHalf($('mPayout').value).trim();
+    var payout = payRaw === '' ? 0 : Math.max(0, Math.round(Number(payRaw) || 0));
+    var rec = {
+      id: newId(),
+      date: $('mDate').value || today(),
+      race: $('mRace').value.trim(),
+      type: $('mType').value,
+      bets: [],
+      stake: stake,
+      result: payRaw === '' ? 'pending' : payout > 0 ? 'hit' : 'miss',
+      hit: -1,
+      payout: payout,
+      createdAt: Date.now()
+    };
+    putRecord(rec).then(function () {
+      flashId = rec.id;
+      $('mRace').value = ''; $('mStake').value = ''; $('mPayout').value = '';
+      renderLedger();
+      toast('記録を追加しました');
+    }, saveError);
+  });
+
+  /* ---------- 起動 ---------- */
+  budgetEl.value = calc.budget || 10000;
+  if (!calc.bets.length) calc.bets.push({ name: '', odds: '' });
   renderRows();
   update();
+  renderLedger();
+  initStore();
 })();
 </script>
 </html>
