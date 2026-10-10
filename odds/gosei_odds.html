@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<title>合成オッズ計算機</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: one narrow column — summary board on top, bet rows below, allocation table last */
+:root {
+  --bg: #f3f5f2;
+  --surface: #ffffff;
+  --fg: #18211c;
+  --muted: #5d6b63;
+  --line: #d6ddd7;
+  --accent: #1d6a48;
+  --accent-soft: #e2efe7;
+  --board: #13261d;
+  --board-fg: #f2f7f3;
+  --board-muted: #9fb8aa;
+  --good: #1d6a48;
+  --warn: #a35d00;
+  --warn-soft: #fbefdc;
+  --bad: #b3261e;
+  --bad-soft: #fbe3e1;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  --font-num: "Barlow Condensed", "Arial Narrow", "Zen Kaku Gothic New", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1612; --surface: #17211b; --fg: #e5ece7; --muted: #95a69c; --line: #2a3a31;
+    --accent: #5cc493; --accent-soft: #1d3428; --board: #0a110d; --board-fg: #eef6f0; --board-muted: #86a395;
+    --good: #5cc493; --warn: #f0a845; --warn-soft: #33270f; --bad: #ff8a80; --bad-soft: #3a1c1a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1612; --surface: #17211b; --fg: #e5ece7; --muted: #95a69c; --line: #2a3a31;
+  --accent: #5cc493; --accent-soft: #1d3428; --board: #0a110d; --board-fg: #eef6f0; --board-muted: #86a395;
+  --good: #5cc493; --warn: #f0a845; --warn-soft: #33270f; --bad: #ff8a80; --bad-soft: #3a1c1a;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  font-size: 15px; line-height: 1.6; margin: 0;
+}
+.wrap { max-width: 640px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: grid; gap: 20px; }
+h1 { font-size: 1.35rem; margin: 0; text-wrap: balance; letter-spacing: .02em; }
+.lead { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
+h2 { font-size: .8rem; letter-spacing: .12em; color: var(--muted); margin: 0 0 10px; font-weight: 700; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+
+/* Summary board */
+.board { background: var(--board); color: var(--board-fg); border-radius: 14px; padding: 18px 20px; display: grid; gap: 14px; }
+.board-main { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.board-label { font-size: .8rem; letter-spacing: .14em; color: var(--board-muted); }
+.board-value { font-family: var(--font-num); font-weight: 700; font-size: 3.6rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.board-value small { font-size: 1.4rem; font-weight: 500; margin-left: 4px; color: var(--board-muted); }
+.chip { display: inline-block; font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; letter-spacing: .04em; }
+.chip.good { background: var(--accent-soft); color: var(--good); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.bad { background: var(--bad-soft); color: var(--bad); }
+.chip.none { background: transparent; color: var(--board-muted); border: 1px solid var(--board-muted); }
+.board-sub { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; border-top: 1px solid rgba(255,255,255,.12); padding-top: 12px; }
+.board-sub div { min-width: 0; }
+.board-sub dt { font-size: .72rem; color: var(--board-muted); letter-spacing: .06em; }
+.board-sub dd { margin: 0; font-family: var(--font-num); font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Input panel */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.rows { display: grid; gap: 8px; }
+.row { display: grid; grid-template-columns: 28px minmax(0, 1fr) 110px 36px; gap: 8px; align-items: center; }
+.row .idx { font-family: var(--font-num); color: var(--muted); text-align: right; font-size: 1.05rem; }
+.row-head { font-size: .72rem; color: var(--muted); letter-spacing: .06em; }
+input[type="text"], input[type="number"], textarea {
+  width: 100%; font: inherit; color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0;
+}
+input.odds { font-family: var(--font-num); font-size: 1.25rem; font-weight: 600; text-align: right; padding-block: 5px; }
+input.invalid { border-color: var(--bad); background: var(--bad-soft); }
+input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.odds-wrap { position: relative; }
+.odds-wrap::after { content: "倍"; position: absolute; right: -2px; top: 50%; transform: translate(100%, -50%); display: none; }
+button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 7px 12px; }
+button:hover { border-color: var(--accent); }
+.del { width: 36px; height: 36px; padding: 0; color: var(--muted); font-size: 1.1rem; line-height: 1; }
+.del:hover { color: var(--bad); border-color: var(--bad); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+.primary:hover { filter: brightness(1.08); }
+.ghost { background: transparent; color: var(--muted); }
+details { margin-top: 12px; }
+summary { cursor: pointer; color: var(--accent); font-size: .9rem; }
+details textarea { margin-top: 8px; min-height: 72px; font-family: var(--font-num); font-size: 1.05rem; }
+.hint { color: var(--muted); font-size: .8rem; margin: 6px 0 0; }
+
+.budget { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.budget label { font-weight: 700; }
+.budget .field { display: flex; align-items: center; gap: 6px; flex: 1 1 180px; min-width: 0; }
+.budget input { font-family: var(--font-num); font-size: 1.25rem; font-weight: 600; text-align: right; padding-block: 5px; }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.presets button { padding: 4px 10px; font-size: .85rem; }
+
+/* Allocation table */
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th { text-align: right; font-weight: 500; font-size: .72rem; color: var(--muted); letter-spacing: .06em; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+td { padding: 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+td.num { font-size: 1.15rem; }
+td.plus { color: var(--good); }
+td.minus { color: var(--bad); }
+tfoot td { border-bottom: 0; font-weight: 700; }
+.note { color: var(--muted); font-size: .8rem; margin: 10px 0 0; }
+.formula { font-size: .82rem; color: var(--muted); line-height: 1.8; }
+.formula code { font-family: var(--font-num); font-size: .95rem; color: var(--fg); background: var(--accent-soft); padding: 1px 6px; border-radius: 4px; }
+
+@media (max-width: 420px) {
+  .board-value { font-size: 3rem; }
+  .row { grid-template-columns: 22px minmax(0, 1fr) 92px 36px; gap: 6px; }
+  .board-sub dd { font-size: 1.15rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .board-value { transition: color .2s; }
+}
+</style>
+
+<main class="wrap">
+  <header>
+    <h1>合成オッズ計算機</h1>
+    <p class="lead">買い目ごとのオッズを入れるだけで、合成オッズと「どれが当たっても同じ払戻」になる賭け金配分を計算します。</p>
+  </header>
+
+  <section class="board" aria-live="polite">
+    <div class="board-main">
+      <div>
+        <div class="board-label">合成オッズ</div>
+        <div class="board-value" id="gosei">–<small>倍</small></div>
+      </div>
+      <span class="chip none" id="verdict">オッズを入力</span>
+    </div>
+    <dl class="board-sub">
+      <div><dt>点数</dt><dd class="num" id="count">0点</dd></div>
+      <div><dt>的中確率の目安</dt><dd class="num" id="prob">–</dd></div>
+      <div><dt>最低払戻（配分後）</dt><dd class="num" id="minPay">–</dd></div>
+    </dl>
+  </section>
+
+  <section class="panel" aria-labelledby="h-bets">
+    <h2 id="h-bets">買い目とオッズ</h2>
+    <div class="row row-head" aria-hidden="true">
+      <span></span><span>買い目（任意）</span><span style="text-align:right">オッズ（倍）</span><span></span>
+    </div>
+    <div class="rows" id="rows"></div>
+    <div class="actions">
+      <button type="button" class="primary" id="add">＋ 買い目を追加</button>
+      <button type="button" class="ghost" id="clear">すべて消去</button>
+    </div>
+    <p class="hint">オッズ欄で Enter を押すと次の行に進みます（最後の行なら新しい行を追加）。</p>
+    <details>
+      <summary>オッズをまとめて入力する</summary>
+      <textarea id="bulk" placeholder="例: 3.5 5.2 8.0 12.4&#10;スペース・カンマ・改行区切りで貼り付け"></textarea>
+      <div class="actions">
+        <button type="button" id="bulkApply">この内容で置き換える</button>
+      </div>
+    </details>
+  </section>
+
+  <section class="panel" aria-labelledby="h-alloc">
+    <h2 id="h-alloc">賭け金の配分</h2>
+    <div class="budget">
+      <label for="budget">総投資額</label>
+      <div class="field"><input type="number" id="budget" min="100" step="100" inputmode="numeric" value="10000"><span>円</span></div>
+      <div class="presets">
+        <button type="button" data-b="1000">1,000</button>
+        <button type="button" data-b="3000">3,000</button>
+        <button type="button" data-b="5000">5,000</button>
+        <button type="button" data-b="10000">10,000</button>
+      </div>
+    </div>
+    <div class="table-scroll" style="margin-top:14px">
+      <table>
+        <thead><tr><th>買い目</th><th>オッズ</th><th>賭け金</th><th>的中時払戻</th><th>収支</th></tr></thead>
+        <tbody id="alloc"></tbody>
+        <tfoot id="allocFoot"></tfoot>
+      </table>
+    </div>
+    <p class="note">賭け金は100円単位に丸めています。そのため、払戻は買い目ごとに少しずつ差が出ます。</p>
+  </section>
+
+  <section class="formula">
+    <h2>計算式</h2>
+    合成オッズ <code>= 1 ÷ (1/オッズ₁ + 1/オッズ₂ + …)</code><br>
+    各買い目の賭け金 <code>= 総投資額 × (1/オッズ) ÷ Σ(1/オッズ)</code><br>
+    合成オッズが 1.0 倍を下回ると、どれが当たっても損（トリガミ）になります。
+  </section>
+</main>
+
+<script>
+(function () {
+  var KEY = 'gosei-odds-v1';
+  var rowsEl = document.getElementById('rows');
+  var budgetEl = document.getElementById('budget');
+  var uid = 0;
+
+  // 初回は例の値（ユーザーのデータではない）
+  var state = { budget: 10000, bets: [
+    { name: '例）1着 ③', odds: '3.5' },
+    { name: '例）1着 ⑦', odds: '5.2' },
+    { name: '例）1着 ⑪', odds: '12.4' }
+  ] };
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved && Array.isArray(saved.bets)) state = saved;
+  } catch (e) {}
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  function yen(n) { return Math.round(n).toLocaleString('ja-JP') + '円'; }
+  function fmtOdds(n) { return n >= 100 ? n.toFixed(1) : n.toFixed(2); }
+  function parseOdds(v) {
+    var s = String(v).trim().replace(/[０-９．]/g, function (c) {
+      return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
+    }).replace(/倍$/, '');
+    if (s === '') return null;
+    var n = Number(s);
+    return isFinite(n) && n >= 1 ? n : NaN;
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function renderRows(focusIndex) {
+    rowsEl.innerHTML = '';
+    state.bets.forEach(function (b, i) {
+      var id = 'b' + (++uid);
+      var row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML =
+        '<span class="idx">' + (i + 1) + '</span>' +
+        '<input type="text" id="' + id + 'n" aria-label="買い目 ' + (i + 1) + '" placeholder="買い目 ' + (i + 1) + '" value="' + esc(b.name) + '">' +
+        '<input type="text" id="' + id + 'o" class="odds" inputmode="decimal" aria-label="オッズ ' + (i + 1) + '" placeholder="0.0" value="' + esc(b.odds) + '">' +
+        '<button type="button" class="del" aria-label="' + (i + 1) + '行目を削除">×</button>';
+      var nameIn = row.children[1], oddsIn = row.children[2], del = row.children[3];
+      nameIn.addEventListener('input', function () { b.name = nameIn.value; update(); });
+      oddsIn.addEventListener('input', function () { b.odds = oddsIn.value; update(); });
+      oddsIn.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' || e.isComposing) return;
+        e.preventDefault();
+        if (i === state.bets.length - 1) { addRow(); }
+        else { rowsEl.children[i + 1].children[2].focus(); }
+      });
+      del.addEventListener('click', function () {
+        state.bets.splice(i, 1);
+        if (!state.bets.length) state.bets.push({ name: '', odds: '' });
+        renderRows(); update();
+      });
+      rowsEl.appendChild(row);
+    });
+    if (focusIndex != null && rowsEl.children[focusIndex]) rowsEl.children[focusIndex].children[2].focus();
+  }
+
+  function addRow() {
+    state.bets.push({ name: '', odds: '' });
+    renderRows(state.bets.length - 1);
+    update();
+  }
+
+  function update() {
+    var valid = [];
+    state.bets.forEach(function (b, i) {
+      var o = parseOdds(b.odds);
+      var input = rowsEl.children[i] && rowsEl.children[i].children[2];
+      if (input) input.classList.toggle('invalid', Number.isNaN(o));
+      if (o) valid.push({ name: b.name.trim() || ('買い目 ' + (i + 1)), odds: o });
+    });
+
+    var budget = Math.max(0, Math.floor(Number(budgetEl.value) || 0));
+    state.budget = budget;
+
+    var goseiEl = document.getElementById('gosei');
+    var verdict = document.getElementById('verdict');
+    document.getElementById('count').textContent = valid.length + '点';
+
+    var tbody = document.getElementById('alloc');
+    var tfoot = document.getElementById('allocFoot');
+
+    if (!valid.length) {
+      goseiEl.innerHTML = '–<small>倍</small>';
+      verdict.className = 'chip none'; verdict.textContent = 'オッズを入力';
+      document.getElementById('prob').textContent = '–';
+      document.getElementById('minPay').textContent = '–';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:left;color:var(--muted)">オッズを1つ以上入力すると配分が表示されます。</td></tr>';
+      tfoot.innerHTML = '';
+      save();
+      return;
+    }
+
+    var inv = valid.reduce(function (s, v) { return s + 1 / v.odds; }, 0);
+    var gosei = 1 / inv;
+    goseiEl.innerHTML = fmtOdds(gosei) + '<small>倍</small>';
+    document.getElementById('prob').textContent = (Math.min(inv, 1) * 100).toFixed(1) + '%';
+
+    if (gosei < 1) { verdict.className = 'chip bad'; verdict.textContent = 'トリガミ（必ず損）'; }
+    else if (gosei < 2) { verdict.className = 'chip warn'; verdict.textContent = '低配当'; }
+    else { verdict.className = 'chip good'; verdict.textContent = '払戻 ' + gosei.toFixed(1) + '倍'; }
+
+    // 100円単位で配分（最低100円）
+    var rows = valid.map(function (v) {
+      var ideal = budget * (1 / v.odds) / inv;
+      var amt = Math.max(100, Math.round(ideal / 100) * 100);
+      return { name: v.name, odds: v.odds, amt: amt };
+    });
+    var total = rows.reduce(function (s, r) { return s + r.amt; }, 0);
+    var minPay = Infinity;
+    tbody.innerHTML = rows.map(function (r) {
+      var pay = Math.floor(r.amt * r.odds / 10) * 10;
+      minPay = Math.min(minPay, pay);
+      var pl = pay - total;
+      return '<tr><td>' + esc(r.name) + '</td>' +
+        '<td class="num">' + r.odds.toFixed(1) + '</td>' +
+        '<td class="num">' + yen(r.amt) + '</td>' +
+        '<td class="num">' + yen(pay) + '</td>' +
+        '<td class="num ' + (pl >= 0 ? 'plus' : 'minus') + '">' + (pl >= 0 ? '+' : '−') + yen(Math.abs(pl)) + '</td></tr>';
+    }).join('');
+    tfoot.innerHTML = '<tr><td>合計</td><td></td><td class="num">' + yen(total) + '</td>' +
+      '<td colspan="2" class="num" style="font-weight:500;color:var(--muted)">実質 ' + fmtOdds(minPay / total) + '倍以上</td></tr>';
+    document.getElementById('minPay').textContent = yen(minPay);
+    save();
+  }
+
+  document.getElementById('add').addEventListener('click', addRow);
+  document.getElementById('clear').addEventListener('click', function () {
+    state.bets = [{ name: '', odds: '' }];
+    renderRows(0); update();
+  });
+  document.getElementById('bulkApply').addEventListener('click', function () {
+    var parts = document.getElementById('bulk').value.split(/[\s,、，]+/).filter(Boolean);
+    if (!parts.length) return;
+    state.bets = parts.map(function (p) { return { name: '', odds: p }; });
+    renderRows(); update();
+  });
+  budgetEl.addEventListener('input', update);
+  document.querySelectorAll('.presets button').forEach(function (btn) {
+    btn.addEventListener('click', function () { budgetEl.value = btn.dataset.b; update(); });
+  });
+
+  budgetEl.value = state.budget || 10000;
+  if (!state.bets.length) state.bets.push({ name: '', odds: '' });
+  renderRows();
+  update();
+})();
+</script>
+</html>
